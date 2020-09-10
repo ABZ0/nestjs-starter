@@ -43,5 +43,5 @@ export function configure(
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('swagger', app, document);
 
-  logger.log('Application Configuration complete');
+  logger.log('Application configuration complete');
 }
