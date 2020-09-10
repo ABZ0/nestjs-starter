@@ -1,8 +1,16 @@
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { configure } from './config.main';
+import { ConfigService } from './config/config.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(3000);
+  const logger = new Logger('NestApplication');
+  const config = app.get(ConfigService);
+  const port = config.port;
+  configure(app, config, logger);
+  await app.listen(port);
+  logger.verbose(`http://localhost:${port}/swagger`);
 }
 bootstrap();
