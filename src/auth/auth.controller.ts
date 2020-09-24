@@ -34,7 +34,7 @@ export class AuthController {
     const exist = await this.userService.exists({ email: dto.email });
     if (exist) throw new EmailTakenException();
 
-    // 2. Hash the password
+    // 2. Encrypt user password
     const hash = await this.authService.generateHashedPassword(password);
 
     // 3. Create user

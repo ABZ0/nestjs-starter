@@ -109,7 +109,10 @@ export class BaseService<T> {
       },
     ]);
 
-    return (data[0] as unknown) as Pagination<T>;
+    return {
+      content: data[0]?.content || [],
+      count: data[0]?.count || 0,
+    } as Pagination<T>;
   }
 
   /**
