@@ -3,7 +3,6 @@ import {
   ValidationOptions,
   ValidationArguments,
   isDateString,
-  isDate,
 } from 'class-validator';
 
 /**

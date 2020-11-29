@@ -1,22 +1,16 @@
-import {
-  IsString,
-  IsIn,
-  IsArray,
-  IsNumber,
-  IsOptional,
-  Min,
-  IsPositive,
-  IsObject,
-} from 'class-validator';
+import { IsString, IsIn, IsNumber, IsOptional, Min } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { escapeRegexSpecialCharacters } from '../utils/string.util';
 
 export class SearchOptions {
   @IsNumber()
   @Min(0)
+  @Transform((val) => parseInt(val, 10))
   offset?: number = 0;
 
-  @IsPositive()
+  @IsNumber()
+  @Min(0)
+  @Transform((val) => parseInt(val, 10))
   size?: number = 10;
 
   @IsOptional()
@@ -31,9 +25,4 @@ export class SearchOptions {
   @IsString()
   @Transform((val: string) => escapeRegexSpecialCharacters(val))
   searchTerm?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsObject({ each: true })
-  filterBy?: Object[];
 }

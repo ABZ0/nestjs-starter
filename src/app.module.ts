@@ -3,8 +3,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from './config/config.module';
 import { ConfigModuleConfig, MongooseModuleConfig } from './config/options';
 import { CoreModule } from './core/core.module';
-import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -16,8 +16,8 @@ import { AuthModule } from './auth/auth.module';
       imports: [ConfigModule.Deferred],
     }),
     CoreModule,
-    UserModule,
     AuthModule,
+    UsersModule,
   ],
 })
 export class AppModule {}

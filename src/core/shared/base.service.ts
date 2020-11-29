@@ -1,9 +1,11 @@
 import { Model, Document, Types } from 'mongoose';
-import { asap } from 'rxjs';
-import { InvalidIdException } from '../exceptions';
+import { InvalidIdException, RecordNotFoundException } from '../exceptions';
 import { ObjectId } from '../utils';
 import { Pagination } from './pagination.interface';
 
+/**
+ * Base class for all services based on crud
+ */
 export class BaseService<T> {
   constructor(protected model: Model<Document>) {}
 
@@ -46,6 +48,8 @@ export class BaseService<T> {
    */
   async findById(id: string | ObjectId, projection = {}) {
     const doc = await this.model.findById(this.toObjectId(id), projection);
+    if (!doc) throw new RecordNotFoundException(this.model.modelName);
+
     return (doc as unknown) as T;
   }
 
@@ -53,41 +57,35 @@ export class BaseService<T> {
    * Updates one document by condition.
    */
   async updateOne(filter: any, updates: any, projection = {}) {
-    const doc = await this.model.findOneAndUpdate(filter, updates, {
-      new: true,
-      projection,
-    });
+    const options = { new: true, projection };
+    const doc = await this.model.findOneAndUpdate(filter, updates, options);
+    if (!doc) throw new RecordNotFoundException(this.model.modelName);
+
     return (doc as unknown) as T;
   }
 
   /**
    * Updates a single document by its _id field
    */
-  async updateById(id: string | ObjectId, updates: any, projection = {}) {
+  async update(id: string | ObjectId, updates: any, projection = {}) {
+    const options = { new: true, projection };
     const doc = await this.model.findByIdAndUpdate(
       this.toObjectId(id),
       updates,
-      {
-        new: true,
-        projection,
-      },
+      options,
     );
-    return (doc as unknown) as T;
-  }
+    if (!doc) throw new RecordNotFoundException(this.model.modelName);
 
-  /**
-   * Removes one document by condition.
-   */
-  async deleteOne(filter: any) {
-    const doc = await this.model.findOneAndRemove(filter);
     return (doc as unknown) as T;
   }
 
   /**
    * Removes a single document by its _id field
    */
-  async deleteById(id: string | ObjectId) {
+  async remove(id: string | ObjectId) {
     const doc = await this.model.findByIdAndDelete(this.toObjectId(id));
+    if (!doc) throw new RecordNotFoundException(this.model.modelName);
+
     return (doc as unknown) as T;
   }
 
@@ -109,17 +107,9 @@ export class BaseService<T> {
       },
     ]);
 
-    return {
-      content: data[0]?.content || [],
-      count: data[0]?.count || 0,
-    } as Pagination<T>;
-  }
+    const content = data[0]?.content || [];
+    const count = data[0]?.count || 0;
 
-  /**
-   * Performs aggregations on the models collection to obtain one document.
-   */
-  async aggregateOne(query: any[]) {
-    const data = await this.model.aggregate([{ $limit: 1 }, ...query]);
-    return (data[0] as unknown) as T;
+    return { count, content } as Pagination<T>;
   }
 }

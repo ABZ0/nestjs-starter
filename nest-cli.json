@@ -11,7 +11,9 @@
             ".entity.ts",
             ".class.ts",
             ".model.ts"
-          ]
+          ],
+          "classValidatorShim": true,
+          "introspectComments": true
         }
       }
     ]

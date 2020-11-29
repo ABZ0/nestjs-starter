@@ -17,6 +17,9 @@ export class EnvConfig {
   API_URL: string = 'http://localhost:4000';
 
   @f
+  APP_URL: string;
+
+  @f
   DATABASE_URL: string;
 
   @f
@@ -24,4 +27,10 @@ export class EnvConfig {
 
   @f
   JWT_EXPIRE: string;
+
+  @f
+  EMAIL_FROM: string;
+
+  @f
+  GMAIL_PASSWORD: string;
 }

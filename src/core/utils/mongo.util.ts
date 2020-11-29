@@ -1,6 +1,15 @@
 import { Schema, Types } from 'mongoose';
+import * as bcrypt from 'bcryptjs';
 
 export type ObjectId = Types.ObjectId;
+
+/**
+ * Hash user password using bcrypt
+ * @param value
+ */
+export function toHash(value: string, rounds = 10): string {
+  return value ? bcrypt.hashSync(value, rounds) : value;
+}
 
 /**
  * Return value as objectId if the value is a valid bson ObjectId, else return the value

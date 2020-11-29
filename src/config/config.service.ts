@@ -66,7 +66,7 @@ export class ConfigService {
   }
 
   get appUrl(): string {
-    return this.envConfig.API_URL;
+    return this.envConfig.APP_URL;
   }
 
   get jwtSecret(): string {
@@ -75,5 +75,13 @@ export class ConfigService {
 
   get jwtExpire(): string {
     return this.envConfig.JWT_EXPIRE;
+  }
+
+  get emailFrom(): string {
+    return this.envConfig.EMAIL_FROM;
+  }
+
+  get gmailPassword(): string {
+    return this.envConfig.GMAIL_PASSWORD;
   }
 }

@@ -1,68 +1,76 @@
 import {
-  Body,
-  ClassSerializerInterceptor,
   Controller,
   Post,
-  UseInterceptors,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Request,
+  InternalServerErrorException,
+  Get,
 } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiTags } from '@nestjs/swagger';
-import {
-  EmailTakenException,
-  InvalidCredentialsException,
-} from 'src/core/exceptions';
-import { CreateUserDto } from 'src/user/dto';
-import { UserService } from 'src/user/user.service';
-import { LoginVm, UserVm } from 'src/user/view-models';
+import { ApiTags } from '@nestjs/swagger';
+import { User } from 'src/users/entities/user.entity';
 import { AuthService } from './auth.service';
-import { LoginDto } from './dto';
+import {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  SigninDto,
+  SignUpDto,
+} from './dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { LocalAuthGuard } from './guards';
+import { IUserRequest } from './interfaces/user-request.interface';
 
 @Controller('auth')
 @ApiTags('Auth')
-@ApiBadRequestResponse()
-@UseInterceptors(ClassSerializerInterceptor)
 export class AuthController {
-  constructor(
-    private readonly userService: UserService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
-  @Post('register')
-  async registerUser(@Body() dto: CreateUserDto) {
-    const { password, ...data } = dto;
-
-    // 1. Check email uniqueness
-    const exist = await this.userService.exists({ email: dto.email });
-    if (exist) throw new EmailTakenException();
-
-    // 2. Encrypt user password
-    const hash = await this.authService.generateHashedPassword(password);
-
-    // 3. Create user
-    const user = await this.userService.create({ hash, ...data });
-
-    // 4. Generate email verification token
-    const token = this.authService.createToken(user);
-
-    // 5. Send verification email
-
-    return new UserVm(user);
+  @Post('/signup')
+  signUp(@Body() signUpDto: SignUpDto): Promise<User> {
+    return this.authService.signUpWithPassword(signUpDto);
   }
 
-  @Post('login')
-  async loginUser(@Body() dto: LoginDto) {
-    const { email, password } = dto;
+  @UseGuards(LocalAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('/signin')
+  public signIn(@Request() req: IUserRequest, @Body() dto: SigninDto): any {
+    this.addJwtToCookie(req);
+    return { token: req.session.jwt, user: req.user };
+    // redirect on frontend
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSExternalRedirectNotAllowed
+  }
 
-    // 1. Check email
-    const user = await this.userService.findOne({ email });
-    if (!user) throw new InvalidCredentialsException();
+  @Get('/logout')
+  public logOut(@Request() req: IUserRequest): void {
+    req.session = null;
+    return;
+  }
 
-    // 2. Check password
-    const isValid = await this.authService.comparePassword(password, user.hash);
-    if (!isValid) throw new InvalidCredentialsException();
+  @Post('/verify-email')
+  verifyEmail(@Body() verifyEmailDto: VerifyEmailDto): Promise<boolean> {
+    return this.authService.verifyEmail(verifyEmailDto.code);
+  }
 
-    // 3. Generate jwt token
-    const token = this.authService.createToken(user);
+  @Post('/forgot-password')
+  forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto): Promise<void> {
+    return this.authService.forgotPassword(forgotPasswordDto);
+  }
 
-    return new LoginVm({ user, token });
+  @Post('/reset-password')
+  resetPassword(@Body() dto: ResetPasswordDto): Promise<boolean> {
+    return this.authService.resetPassword(dto);
+  }
+
+  private addJwtToCookie(req: IUserRequest) {
+    try {
+      req.session.jwt = this.authService.generateJwtToken(req.user).accessToken;
+    } catch (err) {
+      throw new InternalServerErrorException(
+        err,
+        'Problem with cookie-session middleware?',
+      );
+    }
   }
 }

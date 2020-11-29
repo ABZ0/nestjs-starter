@@ -3,3 +3,4 @@ export * from './record-not-found.exception';
 export * from './email-taken.exception';
 export * from './invalid-credentials.exception';
 export * from './record-exists.exception';
+export * from './send-mail-failed.exception';

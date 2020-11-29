@@ -9,7 +9,7 @@ async function bootstrap() {
   const logger = new Logger('NestApplication');
   const config = app.get(ConfigService);
   const port = config.port;
-  configure(app, config, logger);
+  configure(app, config);
   await app.listen(port);
   logger.verbose(`http://localhost:${port}/swagger`);
 }

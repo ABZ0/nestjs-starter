@@ -1,38 +1,54 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { sign, verify } from 'jsonwebtoken';
-import { ConfigService } from 'src/config/config.service';
-import { ObjectId } from 'src/core/utils';
-import { User } from 'src/user/models';
-import { JWTPayload } from './classes';
-import * as bcryptjs from 'bcryptjs';
+import { Injectable } from '@nestjs/common';
+import { User } from 'src/users/entities/user.entity';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcryptjs';
+import {
+  ForgotPasswordDto,
+  SigninDto,
+  ResetPasswordDto,
+  SignUpDto,
+} from './dto';
+import { InvalidCredentialsException } from 'src/core/exceptions';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-  createToken(user: User): string {
-    const { _id, emailVerified } = user;
-    const id = (_id as ObjectId).toHexString();
-    const payload: JWTPayload = { id, emailVerified };
-    const secret = this.configService.jwtSecret;
-    const expiresIn = this.configService.jwtExpire;
-    return sign(payload, secret, { expiresIn });
+  async signUpWithPassword(signUpDto: SignUpDto): Promise<User> {
+    return await this.usersService.createWithPassword(signUpDto);
   }
 
-  validateToken(token: string) {
-    const secret = this.configService.jwtSecret;
-    try {
-      return verify(token, secret) as JWTPayload;
-    } catch (error) {
-      throw new UnauthorizedException();
+  async verifyEmail(code: string): Promise<boolean> {
+    await this.usersService.verifyEmail(code);
+    return true;
+  }
+
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
+    return await this.usersService.sendResetPasswordEmail(forgotPasswordDto);
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<boolean> {
+    return await this.usersService.resetPassword(resetPasswordDto);
+  }
+
+  async validateUserPassword(signinDto: SigninDto): Promise<any> {
+    const user = await this.usersService.findOne({ email: signinDto.email });
+    if (!user || !(await bcrypt.compare(signinDto.password, user.password))) {
+      throw new InvalidCredentialsException();
     }
+
+    return user;
   }
 
-  generateHashedPassword = async (password: string) => {
-    return await bcryptjs.hash(password, await bcryptjs.genSalt(12));
-  };
+  public generateJwtToken(user: User): { accessToken: string } {
+    const payload: JwtPayload = { sub: user._id };
+    const accessToken = this.jwtService.sign(payload);
 
-  comparePassword = async (password: string, hash: string) => {
-    return await bcryptjs.compare(password, hash);
-  };
+    return { accessToken };
+  }
 }
